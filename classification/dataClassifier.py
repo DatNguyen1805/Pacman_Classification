@@ -78,75 +78,7 @@ def enhancedFeatureExtractorDigit(datum):
     features =  basicFeatureExtractorDigit(datum)
 
     "*** YOUR CODE HERE ***"
-    def getRegions(features):
-        regions = []
-
-        for x in range(DIGIT_DATUM_WIDTH):
-            for y in range(DIGIT_DATUM_HEIGHT):
-                pixel = (x, y)
-                value = features[pixel]
-
-                if value == 0:
-                    topPixel = (x, y - 1)
-                    rightPixel = (x + 1, y)
-                    bottomPixel = (x, y + 1)
-                    leftPixel = (x - 1, y)
-
-                    added = False
-                    for region in regions:
-                        if topPixel in region or rightPixel in region or bottomPixel in region or leftPixel in region:
-                            region.append(pixel)
-                            added = True
-                    
-                    if not added:
-                        regions.append([pixel])
-
-        for i in range(1, 3):
-            for w in range(1, 6):
-                features[(w, "regions", i)] = len(regions) == i
-
-    def getDivision(features):
-        leftBlacks = 0
-        rightBlacks = 0
-        topBlacks = 0
-        bottomBlacks = 0
-
-        for x in range(DIGIT_DATUM_WIDTH):
-            for y in range(DIGIT_DATUM_HEIGHT):
-                if features[(x, y)] == 1:
-                    if(x < DIGIT_DATUM_WIDTH / 2):
-                        leftBlacks += 1
-                    else:
-                        rightBlacks += 1
-
-                    if(y < DIGIT_DATUM_WIDTH / 2):
-                        topBlacks += 1
-                    else:
-                        bottomBlacks += 1
-        
-        for w in range(1, 2):
-            features[(w, "horizontalDivision")] = topBlacks > bottomBlacks
-
-        for w in range(1, 2):
-            features[(w, "verticalDivision")] = leftBlacks > rightBlacks
-
-    def getPixelRelations(features, datum):
-        for x in range(DIGIT_DATUM_WIDTH):
-            for y in range(DIGIT_DATUM_HEIGHT):
-                features[("horizontalPixelRelations", (x, y))] = features[(x, y)] > features[(x - 1, y)]
-                features[("verticalPixelRelations", (x, y))] = features[(x, y)] > features[(x, y - 1)]
-
-    def getPixelRelations2(features):
-        for x in range(DIGIT_DATUM_WIDTH):
-            for y in range(DIGIT_DATUM_HEIGHT):
-                features[("horizontalPixelRelations2", (x, y))] = datum.getPixel(x, y) > datum.getPixel(x - 1, y)
-                features[("verticalPixelRelations2", (x, y))] = datum.getPixel(x, y) > datum.getPixel(x, y - 1)
-
-    getPixelRelations(features, datum)
-    getPixelRelations2(features)
-
-    return features
-
+    util.raiseNotDefined()
 
 
 def basicFeatureExtractorPacman(state):
@@ -189,60 +121,31 @@ def enhancedPacmanFeatures(state, action):
     """
     features = util.Counter()
     "*** YOUR CODE HERE ***"
-    nextState = state.generateSuccessor(0, action)
+    successor = state.generateSuccessor(0, action) 
+    pacmanPosition = successor.getPacmanPosition()
+    closestFood = 0
+    foodList = successor.getFood().asList()
+    closestGhost = 0
+    ghostPosition = successor.getGhostPositions()
 
-    def getPacmanPositionDeltaFeature(features):
-        currentPacmanPosition = state.getPacmanPosition()
-        nextPacmanPosition = nextState.getPacmanPosition()
-        features["pacmanPositionDelta"] = util.manhattanDistance(currentPacmanPosition, nextPacmanPosition)
-
-    def getGameOverFeature(features):
-        features["gameOver"] = nextState.isLose()
-
-    def getScoreFeature(features):
-        features["score"] = nextState.getScore()
+    if foodList:
+        closestFood = min([util.manhattanDistance(i, pacmanPosition) for i in foodList])
+    if closestFood:
+        closestFood = 9.0 / closestFood
+    else:
+        closestFood
+    features['closestFood'] = closestFood 
+        
+    if ghostPosition:
+        closestGhost = min(util.manhattanDistance(i, pacmanPosition) for i in ghostPosition)
+    if closestGhost:
+        closestGhost = 9.0 / closestGhost
+    else:
+        closestGhost   
+    features['closestGhost'] = closestGhost
     
-    def getRemainingItemsFeature(features, name, itemCount):
-        features["remaining" + name] = itemCount
-
-    def getDistanceToNearestItemFeature(features, name, itemPositions):
-        currentPacmanPosition = nextState.getPacmanPosition()
-        distanceToNearestItem = getDistanceToNearestItem(currentPacmanPosition, itemPositions)
-
-        features["distanceToNearest" + name] = distanceToNearestItem
-    
-    def getDistanceToNearestItemDeltaFeature(features, name, currentItemPositions, nextItemPositions):
-        currentPacmanPosition = state.getPacmanPosition()
-        nextPacmanPosition = nextState.getPacmanPosition()
-
-        currentDistanceToNearestItem = getDistanceToNearestItem(currentPacmanPosition, currentItemPositions)
-        nextDistanceToNearestItem = getDistanceToNearestItem(nextPacmanPosition, nextItemPositions)
-
-        features["distanceToNearest" + name + "Delta"] = currentDistanceToNearestItem - nextDistanceToNearestItem
-
-    def getDistanceToNearestItem(pacmanPosition, itemPositions):
-        distanceToNearestItem = 0
-        if len(itemPositions) > 0:
-            distanceToNearestItem = min(util.manhattanDistance(position, pacmanPosition) for position in itemPositions)
-
-        return distanceToNearestItem
-
-    getPacmanPositionDeltaFeature(features)
-    getGameOverFeature(features)
-    getScoreFeature(features)
-
-    getRemainingItemsFeature(features, "Food", nextState.getNumFood())
-    getDistanceToNearestItemFeature(features, "Food", nextState.getFood().asList())
-    getDistanceToNearestItemDeltaFeature(features, "Food", state.getFood().asList(), nextState.getFood().asList())
-
-    getRemainingItemsFeature(features, "Capsules", len(nextState.getCapsules()))
-
-    getRemainingItemsFeature(features, "Ghosts", len(nextState.getGhostPositions()))
-    getDistanceToNearestItemFeature(features, "Ghost", nextState.getGhostPositions())
-    getDistanceToNearestItemDeltaFeature(features, "Ghost", state.getGhostPositions(), nextState.getGhostPositions())
-
+    features['remainingFood'] = successor.getNumFood()
     return features
-
 
 def contestFeatureExtractorDigit(datum):
     """
